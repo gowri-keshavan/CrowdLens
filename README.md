@@ -12,13 +12,5 @@ CrowdLens is a backend system designed to analyze crowd behavior from video inpu
 - API-based design for integration with frontend dashboards
 
 ## Project Structure
-crowdlens-backend/
-├── app.py # Main Flask application
-├── models/ # Directory for ML models (to be added)
-├── utils/ # Utility functions and helpers
-├── data/ # Storage for logs (e.g., logs.csv)
-├── static/ # Static assets (CSS, JS, etc.)
-├── templates/ # HTML templates
-├── requirements.txt # Python dependencies
-└── README.md # Project documentation
+
 
