@@ -1,0 +1,23 @@
+1. ShanghaiTech Dataset [images]
+
+2. UCF-Crime Dataset [videos]
+
+3. crowd images online [images]
+
+
+
+PIPELINE DIAGRAM
+
+
+                 [ Live CCTV Feed ]
+                          |
+          +---------------+----------------+
+          |                                |
+[Anomaly Detector]                  [Crowd Density Estimator]
+(Video → Anomaly Score)             (Image → Crowd Count)
+          |                                |
+          +---------------+----------------+
+                          |
+                  [ Fusion Logic ]
+                          |
+            🚨 Trigger Alerts (based on thresholds)
