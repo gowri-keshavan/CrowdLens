@@ -150,122 +150,131 @@
 # cv2.destroyAllWindows()
 
 # VERSION 3
-
 import cv2
 import time
 from collections import deque
 from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
 
-# ─── CONFIG ────────────────────────────────────────────────────────────────────
-VIDEO_PATH    = r"D:\Crowd_lens\datasets\overcrowded market.mp4"
-MODEL_PATH    = "yolov8n.pt"     # generic COCO person detector
-IMG_SIZE      = 640              # inference resolution
-CONF_THR      = 0.3              # min detection confidence
-IOU_THR       = 0.4              # NMS IoU threshold
-MAX_AGE       = 0                # immediate drop of lost tracks
-SHRINK_FACTOR = 0.1              # shrink each box by 10%
-INFER_EVERY   = 3                # run detection+tracking every Nth frame
-FPS_WINDOW    = 30               # number of displayed frames to avg FPS over
-# ───────────────────────────────────────────────────────────────────────────────
+def run_detection(VIDEO_PATH):
+    
 
-# 1. Load detector & tracker
-model    = YOLO(MODEL_PATH)
-deepsort = DeepSort(max_age=MAX_AGE)
+    # ─── CONFIG ────────────────────────────────────────────────────────────────────
+      # Replace with your .avi file path
+    MODEL_PATH    = "yolov8n.pt"     # generic COCO person detector
+    IMG_SIZE      = 640              # inference resolution
+    CONF_THR      = 0.3              # min detection confidence
+    IOU_THR       = 0.4              # NMS IoU threshold
+    MAX_AGE       = 0                # immediate drop of lost tracks
+    SHRINK_FACTOR = 0.1              # shrink each box by 10%
+    INFER_EVERY   = 3                # run detection+tracking every Nth frame
+    FPS_WINDOW    = 30               # number of displayed frames to avg FPS over
+    # ───────────────────────────────────────────────────────────────────────────────
 
-# 2. Open video
-cap = cv2.VideoCapture(VIDEO_PATH)
-if not cap.isOpened():
-    raise RuntimeError(f"Cannot open {VIDEO_PATH}")
+    # 1. Load detector & tracker
+    model    = YOLO(MODEL_PATH)
+    deepsort = DeepSort(max_age=MAX_AGE)
 
-# 3. Initialize display window
-win_name = "Crowd Detection + Tracking"
-cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
-cv2.resizeWindow(win_name, 800, 600)
+    # 2. Open video
+    cap = cv2.VideoCapture(VIDEO_PATH)
+    if not cap.isOpened():
+        raise RuntimeError(f"Cannot open {VIDEO_PATH}")
 
-# 4. Prepare for frame skipping & FPS calc
-last_tracks = []
-frame_idx   = 0
-timestamps  = deque(maxlen=FPS_WINDOW)
+    # 3. Initialize display window
+    win_name = "Crowd Detection + Tracking"
+    cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(win_name, 800, 600)
 
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        break
-    frame_idx += 1
+    # 4. Prepare for frame skipping & FPS calc
+    last_tracks = []
+    frame_idx   = 0
+    timestamps  = deque(maxlen=FPS_WINDOW)
 
-    # ─── RUN DETECTION + TRACKING every INFER_EVERY frames ─────────────────────
-    if frame_idx % INFER_EVERY == 0:
-        # letterbox resize
-        h0, w0 = frame.shape[:2]
-        scale  = IMG_SIZE / max(h0, w0)
-        nw, nh = int(w0 * scale), int(h0 * scale)
-        resized = cv2.resize(frame, (nw, nh), interpolation=cv2.INTER_LINEAR)
-        dw, dh  = (IMG_SIZE - nw)//2, (IMG_SIZE - nh)//2
-        padded = cv2.copyMakeBorder(resized, dh, dh, dw, dw,
-                                    borderType=cv2.BORDER_CONSTANT,
-                                    value=(114,114,114))
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        frame_idx += 1
 
-        # inference
-        det = model(padded, imgsz=IMG_SIZE, conf=CONF_THR, iou=IOU_THR)[0]
-        boxes = det.boxes.xyxy.cpu().numpy()
-        confs = det.boxes.conf.cpu().numpy()
-        clss  = det.boxes.cls.cpu().numpy()
+        # ─── RUN DETECTION + TRACKING every INFER_EVERY frames ─────────────────────
+        if frame_idx % INFER_EVERY == 0:
+            # letterbox resize
+            h0, w0 = frame.shape[:2]
+            scale  = IMG_SIZE / max(h0, w0)
+            nw, nh = int(w0 * scale), int(h0 * scale)
+            resized = cv2.resize(frame, (nw, nh), interpolation=cv2.INTER_LINEAR)
+            dw, dh  = (IMG_SIZE - nw)//2, (IMG_SIZE - nh)//2
+            padded = cv2.copyMakeBorder(resized, dh, dh, dw, dw,
+                                        borderType=cv2.BORDER_CONSTANT,
+                                        value=(114,114,114))
 
-        # unpad, unscale, shrink & filter “person” class
-        dets = []
-        for (x1,y1,x2,y2), c, cls in zip(boxes, confs, clss):
-            if int(cls) != 0:  # only COCO “person”
+            # inference
+            det = model(padded, imgsz=IMG_SIZE, conf=CONF_THR, iou=IOU_THR)[0]
+            boxes = det.boxes.xyxy.cpu().numpy()
+            confs = det.boxes.conf.cpu().numpy()
+            clss  = det.boxes.cls.cpu().numpy()
+
+            # unpad, unscale, shrink & filter “person” class
+            dets = []
+            for (x1,y1,x2,y2), c, cls in zip(boxes, confs, clss):
+                if int(cls) != 0:  # only COCO “person”
+                    continue
+                x1 = (x1 - dw) / scale
+                y1 = (y1 - dh) / scale
+                x2 = (x2 - dw) / scale
+                y2 = (y2 - dh) / scale
+                w, h = x2 - x1, y2 - y1
+                x1 += w * SHRINK_FACTOR/2
+                y1 += h * SHRINK_FACTOR/2
+                x2 -= w * SHRINK_FACTOR/2
+                y2 -= h * SHRINK_FACTOR/2
+                dets.append(([x1, y1, x2, y2], float(c), "person"))
+
+            # update tracks
+            tracks = deepsort.update_tracks(dets, frame=frame)
+            last_tracks = tracks
+        else:
+            # reuse last known tracks
+            tracks = last_tracks
+
+        # ─── DRAW BOXES & COUNT PEOPLE ──────────────────────────────────────────────
+        count = 0
+        for t in tracks:
+            # only confirmed & updated tracks
+            if not t.is_confirmed() or t.time_since_update > 0:
                 continue
-            x1 = (x1 - dw) / scale
-            y1 = (y1 - dh) / scale
-            x2 = (x2 - dw) / scale
-            y2 = (y2 - dh) / scale
-            w, h = x2 - x1, y2 - y1
-            x1 += w * SHRINK_FACTOR/2
-            y1 += h * SHRINK_FACTOR/2
-            x2 -= w * SHRINK_FACTOR/2
-            y2 -= h * SHRINK_FACTOR/2
-            dets.append(([x1, y1, x2, y2], float(c), "person"))
+            count += 1
+            x1, y1, x2, y2 = map(int, t.to_ltrb())
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)  # red box
+            cv2.putText(frame, f"ID:{t.track_id}", (x1, y1 - 6),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
-        # update tracks
-        tracks = deepsort.update_tracks(dets, frame=frame)
-        last_tracks = tracks
+        # ─── CALCULATE MOVING-WINDOW FPS ────────────────────────────────────────────
+        now = time.time()
+        timestamps.append(now)
+        if len(timestamps) >= 2:
+            fps = len(timestamps) / (timestamps[-1] - timestamps[0])
+        else:
+            fps = 0.0
+
+        # ─── OVERLAY COUNTER & FPS ──────────────────────────────────────────────────
+        cv2.rectangle(frame, (0, 0), (300, 35), (0, 0, 0), -1)
+        cv2.putText(frame, f"People: {count}", (5, 20),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+        cv2.putText(frame, f"FPS: {fps:.1f}", (150, 20),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
+        # ─── SHOW FRAME ─────────────────────────────────────────────────────────────
+        cv2.imshow(win_name, frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) > 1:
+        run_detection(sys.argv[1])
     else:
-        # reuse last known tracks
-        tracks = last_tracks
-
-    # ─── DRAW BOXES & COUNT PEOPLE ──────────────────────────────────────────────
-    count = 0
-    for t in tracks:
-        # only confirmed & updated tracks
-        if not t.is_confirmed() or t.time_since_update > 0:
-            continue
-        count += 1
-        x1, y1, x2, y2 = map(int, t.to_ltrb())
-        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)  # red box
-        cv2.putText(frame, f"ID:{t.track_id}", (x1, y1 - 6),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
-
-    # ─── CALCULATE MOVING-WINDOW FPS ────────────────────────────────────────────
-    now = time.time()
-    timestamps.append(now)
-    if len(timestamps) >= 2:
-        fps = len(timestamps) / (timestamps[-1] - timestamps[0])
-    else:
-        fps = 0.0
-
-    # ─── OVERLAY COUNTER & FPS ──────────────────────────────────────────────────
-    cv2.rectangle(frame, (0, 0), (300, 35), (0, 0, 0), -1)
-    cv2.putText(frame, f"People: {count}", (5, 20),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-    cv2.putText(frame, f"FPS: {fps:.1f}", (150, 20),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-
-    # ─── SHOW FRAME ─────────────────────────────────────────────────────────────
-    cv2.imshow(win_name, frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
-cap.release()
-cv2.destroyAllWindows()
+        print("Usage: python test_yolo.py <video_path>")

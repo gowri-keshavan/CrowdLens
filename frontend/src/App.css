@@ -1,0 +1,71 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  background: linear-gradient(45deg, #00f2fe, #3857f3);
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app {
+  text-align: center;
+  background: linear-gradient(145deg, rgba(0, 0, 0, 0.5), rgba(30, 30, 60, 0.7));
+  padding: 50px 40px;
+  border-radius: 24px;
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.25);
+  width: 420px;
+  backdrop-filter: blur(10px);
+}
+
+.title {
+  font-size: 2.8rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(to right, #ff0000, #ee0909);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  color: #f0f0f0;
+}
+
+.upload-container input {
+  margin-bottom: 1rem;
+  background-color: #ffffff;
+  color: #333;
+  border: none;
+  padding: 8px;
+  border-radius: 6px;
+  font-weight: bold;
+}
+
+button {
+  background: linear-gradient(to right, #ff4141, #ff4b2b);
+  border: none;
+  padding: 12px 24px;
+  color: white;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 65, 108, 0.5);
+}
+
+button:hover {
+  background: linear-gradient(to right, #ff4b2b, #ff416c);
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(255, 65, 108, 0.6);
+}
+
+.status {
+  margin-top: 20px;
+  font-size: 1.1rem;
+  color: #ffffcc;
+  text-shadow: 1px 1px 2px #000;
+}
