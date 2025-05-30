@@ -19,7 +19,7 @@ function App() {
       setStatus(res.data.status);
     } catch (err) {
       console.error(err);
-      setStatus("Error uploading video");
+      setStatus("Uploading video");
     }
   };
 
