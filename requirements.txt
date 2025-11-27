@@ -1,3 +1,6 @@
 Flask
 opencv-python
 numpy
+streamlit
+plotly>=5.0
+
