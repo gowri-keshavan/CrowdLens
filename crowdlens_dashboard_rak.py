@@ -85,13 +85,18 @@ if st.button("Run Analysis"):
     fig.update_layout(yaxis_title='Aggression (%)', xaxis_title='Frame', yaxis=dict(range=[0,100]))
     st.plotly_chart(fig, use_container_width=True)
 
-    # Density and count charts side by side
-    st.subheader("Density and People Count")
-    c1, c2 = st.columns(2)
-    fig_d = px.line(df, x="Frame", y="Density", labels={"Density":"People per pixel"})
-    c1.plotly_chart(fig_d, use_container_width=True)
-    fig_c = px.line(df, x="Frame", y="Current People", labels={"Current People":"People"})
-    c2.plotly_chart(fig_c, use_container_width=True)
+    # Density chart only
+    st.subheader("Density Over Time")
+
+    fig_d = px.line(
+        df,
+        x="Frame",
+        y="Density",
+        labels={"Time": "Frame", "Density": "No: of People"}
+    )
+
+    st.plotly_chart(fig_d, use_container_width=True)
+
 
     # Download button
     csv = df.to_csv(index=False)
